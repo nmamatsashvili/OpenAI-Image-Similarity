@@ -1,71 +1,63 @@
-from importlib.resources import path
 import os
+import time
+from importlib.resources import path
 from pickle import FALSE
 from PIL import Image
 from sentence_transformers import SentenceTransformer, util
 from pathlib import Path
-from datetime import datetime
+
 
 model = SentenceTransformer('clip-ViT-B-32')
 
 stmtIds = []
 stmtIdsUnvisited = []
-print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-dir = "C:/Users/nmamatsashvili/source/repos/WebScraping/ParserApp/bin/Debug/net6.0/responses_test_50"
-p = Path(dir)
-i = 0
+start = time.perf_counter()
 
-f = open(f"data.txt", "x")
-f.close()
+dir = "C:/Users/nmamatsashvili/source/repos/WebScraping/ParserApp/bin/Debug/net6.0/responses_test_5"
+dataFile = "data5.txt"
+FileExists = os.path.exists(dataFile)
+if FileExists :
+    file = open(dataFile,"r+")
+    file.truncate()
+    file.close()
 
 
 for folder in os.listdir(dir):
     stmtIds.append(folder)
-    i = i + 1
 
-stmtIdsUnvisited = stmtIds
+stmtIdsUnvisited = list(stmtIds)
+openFile = open(dataFile, "a")
 
 for stmt in stmtIds:
     stmtIdsUnvisited.remove(stmt)
+    lstImagesCurrent = []
+    
     for image in os.listdir(dir + "/" + stmt):
         if os.fsdecode(image).endswith(".jpg") == False:
             continue
-        img_emb = model.encode(Image.open(f"{dir}/{stmt}/{image}"))
-        #img_emb = str(stmt) + "-" + image
-        #print("current image: " + img_emb)
+        lstImagesCurrent.append(Image.open(f"{dir}/{stmt}/{image}"))
+
+    imgEmbeddingsCurrentBatch = model.encode(lstImagesCurrent)
+
+    for img_emb in imgEmbeddingsCurrentBatch:
+        indx = 0
         for stmtNext in stmtIdsUnvisited:
+            lstImagesNext = []
             for imageNext in os.listdir(dir + "/" + stmtNext):
                 if os.fsdecode(imageNext).endswith(".jpg") == False:
                     continue
-                img_emb_next = model.encode(Image.open(f"{dir}/{stmtNext}/{imageNext}"))
-                #img_emb_next = str(stmtNext) + "-" + imageNext
-                #print("next image: " + img_emb_next)
-                cos_scores = util.cos_sim(img_emb, img_emb_next)
-                result = f"statements: {stmt} vs {stmtNext} - images: {image} vs {imageNext} - cos_score: {cos_scores}" 
-                openFile = open(f"data.txt", "a")
+                lstImagesNext.append(Image.open(f"{dir}/{stmtNext}/{imageNext}")) 
+            imgEmbeddingsNextBatch = model.encode(lstImagesNext) 
+            indxNext = 0
+            for embNext in imgEmbeddingsNextBatch:
+                cos_scores = util.cos_sim(img_emb, embNext)
+                img = os.listdir(dir + "/" + stmt)[indx]
+                imgNxt = os.listdir(dir + "/" + stmtNext)[indxNext]
+                result = f"statements: {stmt} vs {stmtNext} - images: {img} vs {imgNxt} - cos_score: {cos_scores}" 
                 openFile.write("\n" + result)
+                indxNext += 1
+            indx += 1
 
 openFile.close()
-print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-
-
-
-
-
-"""
-for folder in os.listdir(dir):
-    stmtIds.append(folder)
-    i = i + 1
-    if i > 2:
-        continue
-    for image in os.listdir(dir + "/" + folder):
-             filename = os.fsdecode(image)
-             if filename.endswith(".jpg") == False:
-                 continue
-             
-             img_emb = model.encode(Image.open(f"{dir}/{folder}/{image}"))
-             torch.save(img_emb, f"{dir}/{folder}/tensors.pt")
-             #torch.load(f"{dir}/{folder}/tensors.pt") #https://discuss.pytorch.org/t/save-a-tensor-to-file/37136/4
-    print(f"embedding for folder {folder} ended successfully")
-
-"""
+end = time.perf_counter()
+print("total time: " + str(end - start) + " seconds")
