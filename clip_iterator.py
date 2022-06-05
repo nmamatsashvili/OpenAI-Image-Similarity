@@ -13,8 +13,8 @@ stmtIds = []
 stmtIdsUnvisited = []
 start = time.perf_counter()
 
-dir = "C:/Users/nmamatsashvili/source/repos/WebScraping/ParserApp/bin/Debug/net6.0/responses_test_5"
-dataFile = "data5.txt"
+dir = "C:/Users/nmamatsashvili/source/repos/WebScraping/ParserApp/bin/Debug/net6.0/responses_test_50"
+dataFile = "data50.txt"
 FileExists = os.path.exists(dataFile)
 if FileExists :
     file = open(dataFile,"r+")
@@ -38,9 +38,9 @@ for stmt in stmtIds:
         lstImagesCurrent.append(Image.open(f"{dir}/{stmt}/{image}"))
 
     imgEmbeddingsCurrentBatch = model.encode(lstImagesCurrent)
-
+    indx = 0
     for img_emb in imgEmbeddingsCurrentBatch:
-        indx = 0
+        
         for stmtNext in stmtIdsUnvisited:
             lstImagesNext = []
             for imageNext in os.listdir(dir + "/" + stmtNext):
@@ -56,8 +56,8 @@ for stmt in stmtIds:
                 result = f"statements: {stmt} vs {stmtNext} - images: {img} vs {imgNxt} - cos_score: {cos_scores}" 
                 openFile.write("\n" + result)
                 indxNext += 1
-            indx += 1
+        indx += 1
 
 openFile.close()
 end = time.perf_counter()
-print("total time: " + str(end - start) + " seconds")
+print("total time: " + str( round(end - start), 2) + " seconds")
